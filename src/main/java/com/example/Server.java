@@ -7,80 +7,122 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileInputStream;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.BufferedOutputStream;
+
 import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import org.bson.Document;
 
 
 public class Server {
+    public static File myFile;
+    public final static String FILE_TO_RECEIVED = "fileSalvar.txt";
+    public final static int FILE_SIZE = 6022386;
     public static void main( String[] args ) {
         final ServerSocket serverSocket;
         final Socket clientSocket;
         final PrintWriter out;
         final BufferedReader in;
+        
+        int bytesRead;
+        int current;
+
+        FileOutputStream fos = null;
+        BufferedOutputStream bos = null;;
+
         try {
             serverSocket  = new ServerSocket(3000);
             System.out.println("Servidor iniciado! (" + serverSocket.getInetAddress() + ")");
-
-            MongoClient mongoClient = new MongoClient("localhost", 27017);
-
             
-            MongoDatabase dataBase = mongoClient.getDatabase("fileStorageDb");
-            //MongoCollection dbCollection = dataBase.getCollection("data");
-            String name = dataBase.getName();
-
-            
-            System.out.println("Lista de bancos de dados!");
-            System.out.println(name);
-            
-            MongoCollection myCollection = dataBase.getCollection("files");
-
-            Document document = new Document();
-            document.put("fileName", "arquivo2");
-            document.put("fileSize", 50);
-            myCollection.insertOne(document);
-
-            Long qtdData = myCollection.count();
-            System.out.print("Quantidade de dados na collection: " + qtdData);
-
-
-
-
-            clientSocket = serverSocket.accept();
-            System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
-
             System.out.println("Aguardando arquivo do cliente... ");
-        
-            out = new PrintWriter(clientSocket.getOutputStream());
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            
+            try {
+                byte [] byteArr = new byte[FILE_SIZE];
+                
+                clientSocket = serverSocket.accept();
+                System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
+                
+                InputStream is = clientSocket.getInputStream();
+                System.out.println("Input Stream: " + is)   ;
+                
+                //in = new BufferedReader(is);
+    
+                fos = new FileOutputStream(FILE_TO_RECEIVED);
+                bos = new BufferedOutputStream(fos);
+                
+                bytesRead = is.read(byteArr, 0, byteArr.length);
 
-            Thread receive = new Thread(new Runnable(){
-                String data;
-                @Override
-                public void run() {
-                    try {
-                        data = in.readLine();
-                        System.out.println("dado recebido: " + data);
-                        while (data != null) {
-                            String[] dataSplit = data.split(";");
-                            System.out.println("Dado recebido do Cliente!");
-                            System.out.println("Nome do arquivo: " + dataSplit[0]);
-                            System.out.println("Tamanho do arquivo: " + dataSplit[1]);
-                            data = in.readLine();
-                        }
-                        
-                        System.out.println("Cliente desconectado!");
-                        out.close();
-                        clientSocket.close();
-                        serverSocket.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            receive.start();
+                
+                current = bytesRead;
+                
+                do {
+                    bytesRead =
+                    is.read(byteArr, current, (byteArr.length-current));
+                    if(bytesRead >= 0) current += bytesRead;
+                }  while(bytesRead > -1);
+                
+                
+                bos.write(byteArr, 0 , current);
+                bos.flush();
+                System.out.println("Arquivo recebido: " + FILE_TO_RECEIVED);
+                System.out.println("Tamanho: " + current + " bytes");
+                //os.read(byteArr, 0, byteArr.length);
+                
+                
+                //String data = in.readLine();
+                
+                // Thread receive = new Thread(new Runnable(){
+                //     String data;
+                //     @Override
+                //     public void run() {
+                //         try {
+                //             System.out.println("dado recebido: " + data);
+                //             while (data != null) {
+                                
+                //                 MongoClient mongoClient = new MongoClient("localhost", 27017);
+                                
+                //                 MongoDatabase dataBase = mongoClient.getDatabase("fileStorageDb");
+                //                 Document document = new Document();
+                                
+                //                 String[] dataReceived = data.split(";");
+                                
+                //                 document.put("fileName", dataReceived[0]);
+                //                 document.put("fileSize", dataReceived[1]);
+                                
+                //                 MongoCollection myCollection = dataBase.getCollection("files");
+                                
+                //                 myCollection.insertOne(document);
+                //                 String[] dataSplit = data.split(";");
+                //                 System.out.println("Dado recebido do Cliente!");
+                //                 System.out.println("Nome do arquivo: " + dataSplit[0]);
+                //                 System.out.println("Tamanho do arquivo: " + dataSplit[1]);
+                //                 data = in.readLine();
+                //                 mongoClient.close();
+                //             }
+                            
+                //             System.out.println("Cliente desconectado!");
+                //             clientSocket.close();
+                //             serverSocket.close();
+                //         } catch (Exception e) {
+                //             e.printStackTrace();
+                //         }
+                //     }
+                // });
+                // receive.start();
+            } finally {
+                if (fos != null) fos.close();
+                if (bos != null) bos.close();
+                if (serverSocket != null) serverSocket.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
