@@ -18,6 +18,8 @@ import java.io.BufferedOutputStream;
 import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.gridfs.GridFS;
+
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import org.bson.Document;
@@ -26,6 +28,7 @@ import org.bson.Document;
 public class Server {
     public static File myFile;
     public final static String FILE_TO_RECEIVED = "fileSalvar.txt";
+    int dataTest;
     public final static int FILE_SIZE = 6022386;
     public static void main( String[] args ) {
         final ServerSocket serverSocket;
@@ -35,6 +38,7 @@ public class Server {
         
         int bytesRead;
         int current;
+        String data;
 
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;;
@@ -52,7 +56,6 @@ public class Server {
                 System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
                 
                 InputStream is = clientSocket.getInputStream();
-                System.out.println("Input Stream: " + is)   ;
                 
                 //in = new BufferedReader(is);
     
@@ -61,63 +64,45 @@ public class Server {
                 
                 bytesRead = is.read(byteArr, 0, byteArr.length);
 
-                
                 current = bytesRead;
                 
                 do {
-                    bytesRead =
-                    is.read(byteArr, current, (byteArr.length-current));
+                    System.out.print("Bytes lidos: ");
+                    for (int i = 0; i < current; i++) {
+                        System.out.print(byteArr[i] + " ");
+                    }
+                    bytesRead = is.read(byteArr, current, (byteArr.length-current));
                     if(bytesRead >= 0) current += bytesRead;
                 }  while(bytesRead > -1);
-                
                 
                 bos.write(byteArr, 0 , current);
                 bos.flush();
                 System.out.println("Arquivo recebido: " + FILE_TO_RECEIVED);
                 System.out.println("Tamanho: " + current + " bytes");
-                //os.read(byteArr, 0, byteArr.length);
+
+                data = FILE_TO_RECEIVED;
                 
+                System.out.println("dado recebido: " + data);
+               // while (data != null) {
+                MongoClient mongoClient = new MongoClient("localhost", 27017);
                 
-                //String data = in.readLine();
+                MongoDatabase dataBase = mongoClient.getDatabase("fileStorageDb");
+                Document document = new Document();
                 
-                // Thread receive = new Thread(new Runnable(){
-                //     String data;
-                //     @Override
-                //     public void run() {
-                //         try {
-                //             System.out.println("dado recebido: " + data);
-                //             while (data != null) {
-                                
-                //                 MongoClient mongoClient = new MongoClient("localhost", 27017);
-                                
-                //                 MongoDatabase dataBase = mongoClient.getDatabase("fileStorageDb");
-                //                 Document document = new Document();
-                                
-                //                 String[] dataReceived = data.split(";");
-                                
-                //                 document.put("fileName", dataReceived[0]);
-                //                 document.put("fileSize", dataReceived[1]);
-                                
-                //                 MongoCollection myCollection = dataBase.getCollection("files");
-                                
-                //                 myCollection.insertOne(document);
-                //                 String[] dataSplit = data.split(";");
-                //                 System.out.println("Dado recebido do Cliente!");
-                //                 System.out.println("Nome do arquivo: " + dataSplit[0]);
-                //                 System.out.println("Tamanho do arquivo: " + dataSplit[1]);
-                //                 data = in.readLine();
-                //                 mongoClient.close();
-                //             }
-                            
-                //             System.out.println("Cliente desconectado!");
-                //             clientSocket.close();
-                //             serverSocket.close();
-                //         } catch (Exception e) {
-                //             e.printStackTrace();
-                //         }
-                //     }
-                // });
-                // receive.start();
+                //ridFS gridFS = new GridFS(dataBase, "files");
+
+                data = FILE_TO_RECEIVED;
+                document.put("fileName", data);
+            
+                MongoCollection myCollection = dataBase.getCollection("files");
+                
+                myCollection.insertOne(document);
+                mongoClient.close();
+                //}
+                
+                System.out.println("Cliente desconectado!");
+                clientSocket.close();
+                serverSocket.close();
             } finally {
                 if (fos != null) fos.close();
                 if (bos != null) bos.close();
