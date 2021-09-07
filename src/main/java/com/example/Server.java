@@ -2,15 +2,12 @@ package com.example;
 
 import java.io.BufferedReader;
 import java.io.PrintWriter;
-import java.io.InputStreamReader;
+
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
+import com.mongodb.client.gridfs.*;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.FileInputStream;
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.BufferedOutputStream;
@@ -18,12 +15,9 @@ import java.io.BufferedOutputStream;
 import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.gridfs.GridFS;
 
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import org.bson.Document;
-
+import org.bson.types.ObjectId;
 
 public class Server {
     public static File myFile;
@@ -47,58 +41,51 @@ public class Server {
             serverSocket  = new ServerSocket(3000);
             System.out.println("Servidor iniciado! (" + serverSocket.getInetAddress() + ")");
             
-            System.out.println("Aguardando arquivo do cliente... ");
             
             try {
                 byte [] byteArr = new byte[FILE_SIZE];
-                
+                data = FILE_TO_RECEIVED;
                 clientSocket = serverSocket.accept();
                 System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
                 
-                InputStream is = clientSocket.getInputStream();
+                System.out.println("Aguardando arquivo do cliente... ");
                 
-                //in = new BufferedReader(is);
-    
+                System.out.println("Aguardando novo arquivo: ");
+                InputStream is = clientSocket.getInputStream();
                 fos = new FileOutputStream(FILE_TO_RECEIVED);
                 bos = new BufferedOutputStream(fos);
-                
                 bytesRead = is.read(byteArr, 0, byteArr.length);
-
+   
                 current = bytesRead;
-                
+
                 do {
-                    System.out.print("Bytes lidos: ");
-                    for (int i = 0; i < current; i++) {
-                        System.out.print(byteArr[i] + " ");
-                    }
                     bytesRead = is.read(byteArr, current, (byteArr.length-current));
                     if(bytesRead >= 0) current += bytesRead;
                 }  while(bytesRead > -1);
-                
+                 
                 bos.write(byteArr, 0 , current);
                 bos.flush();
                 System.out.println("Arquivo recebido: " + FILE_TO_RECEIVED);
                 System.out.println("Tamanho: " + current + " bytes");
-
+   
                 data = FILE_TO_RECEIVED;
-                
+                   
                 System.out.println("dado recebido: " + data);
-               // while (data != null) {
                 MongoClient mongoClient = new MongoClient("localhost", 27017);
                 
                 MongoDatabase dataBase = mongoClient.getDatabase("fileStorageDb");
-                Document document = new Document();
+                //Document document = new Document();
                 
-                //ridFS gridFS = new GridFS(dataBase, "files");
+                GridFSBucket gridFSBucket = GridFSBuckets.create(dataBase, "files");
 
-                data = FILE_TO_RECEIVED;
-                document.put("fileName", data);
+                ObjectId fileId = gridFSBucket.uploadFromStream(data, is);
+
+                //document.put("fileName", data);
             
-                MongoCollection myCollection = dataBase.getCollection("files");
+                //MongoCollection myCollection = dataBase.getCollection("files");
                 
-                myCollection.insertOne(document);
+                //myCollection.insertOne(document);
                 mongoClient.close();
-                //}
                 
                 System.out.println("Cliente desconectado!");
                 clientSocket.close();

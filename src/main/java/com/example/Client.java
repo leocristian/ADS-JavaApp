@@ -21,55 +21,39 @@ public class Client {
         try {
             int port = 3000;
             
-            // System.out.print("Digite o IP do servidor: ");
-            // String serverIP = sc.nextLine();
+            System.out.print("Digite o IP do servidor: ");
+            String serverIP = sc.nextLine();
             
-            clientSocket = new Socket("0.0.0.0", port);                
-            
+            clientSocket = new Socket(serverIP, port);
+            out = clientSocket.getOutputStream();
+
             System.out.print("Digite o nome do arquivo com extensão: ");
             String fileSent = sc.nextLine();
-
+                
             File myFile = new File(fileSent);
 
-            // if (myFile.exists()) {
-            //     System.out.println("Arquivo encontrado!");
-            //     System.out.println("Nome: " + myFile.getName());
-            //     System.out.println("Tamanho: " + myFile.length());
-            // } else {
-            //     System.out.println("Arquivo não encontrado!");
-            // }
-
+            if (myFile.exists()) {
+                System.out.println("Arquivo encontrado!");
+                System.out.println("Nome: " + myFile.getName());
+                System.out.println("Tamanho: " + myFile.length());
+            } else {
+                System.out.println("Arquivo não encontrado!");
+            }
+            
             byte [] byteArr = new byte[(int)myFile.length()];
-
+            
             fis = new FileInputStream(myFile);
             bis = new BufferedInputStream(fis);
-
+            
             bis.read(byteArr, 0, byteArr.length);
-            System.out.println(bis);
-
-            out = clientSocket.getOutputStream();
+            
+            
             System.out.println("Arquivo enviado: " + fileSent);
             System.out.println("Tamanho: " + byteArr.length + " bytes");
             
             out.write(byteArr, 0, byteArr.length);
             
-            out.flush();
-            // Thread sender = new Thread(new Runnable(){
-                
-            //     @Override
-            //     public void run() {
-            //         String fileName = myFile.getName();
-            //         Long fileSize = myFile.length();
-
-            //         System.out.println("Dado enviado com sucesso!");
-            //         String dataSent = (fileName + ";" + fileSize);
-            //         out.println(dataSent);
-            //         out.flush();
-            //     }
-            // });
-            // sender.start();
-                
-                
+            out.flush();    
         } catch (Exception e) {
             System.out.println("Servidor não encontrado!");
         }
