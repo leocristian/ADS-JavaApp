@@ -1,22 +1,25 @@
 package com.example;
 
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
-    public final static int SOCKET_PORT = 13267;  // you may change this
+    public final static int SOCKET_PORT = 3000;  // you may change this
     public static void main( String[] args ) {
-        final Socket clientSocket;
-        final OutputStream out;
-        final Scanner sc = new Scanner(System.in);
+        
+        Socket clientSocket;
+        OutputStream out;
+        BufferedReader in;
+        Scanner sc = new Scanner(System.in);
 
-        BufferedInputStream bis = null;
         FileInputStream fis = null;
+        BufferedInputStream bis = null;
 
         try {
             int port = 3000;
@@ -25,13 +28,14 @@ public class Client {
             String serverIP = sc.nextLine();
             
             clientSocket = new Socket(serverIP, port);
-            out = clientSocket.getOutputStream();
-
-            System.out.print("Digite o nome do arquivo com extensão: ");
+            out = clientSocket.getOutputStream();          
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            
+            System.out.println("Digite o nome do arquivo com extensão: ");
             String fileSent = sc.nextLine();
-                
+            
             File myFile = new File(fileSent);
-
+            
             if (myFile.exists()) {
                 System.out.println("Arquivo encontrado!");
                 System.out.println("Nome: " + myFile.getName());
@@ -47,13 +51,25 @@ public class Client {
             
             bis.read(byteArr, 0, byteArr.length);
             
+            out.write(byteArr, 0, byteArr.length);
+            out.flush();    
             
             System.out.println("Arquivo enviado: " + fileSent);
             System.out.println("Tamanho: " + byteArr.length + " bytes");
-            
-            out.write(byteArr, 0, byteArr.length);
-            
-            out.flush();    
+
+            System.out.println("Esperando confirmação do servidor...");
+            String msg = in.readLine();
+
+            System.out.println("Resposta do servidor: " + msg);
+            //     if (msg == null) {
+            //         System.out.println("Conexão encerrada.");
+            //         break;
+            //     }
+            // }
+
+            out.close();
+            clientSocket.close();
+
         } catch (Exception e) {
             System.out.println("Servidor não encontrado!");
         }
